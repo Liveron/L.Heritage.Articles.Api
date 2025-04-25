@@ -1,0 +1,16 @@
+services:
+  tests:
+    image: ${DOCKER_REGISTRY-}heritagearticlestest
+    build: 
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        GITHUB_NUGET_TOKEN: ${GITHUB_NUGET_TOKEN}
+    volumes:
+      - ./TestResults:/app/TestResults
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - HERITAGE_ARTICLES_DB=${HERITAGE_ARTICLES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy

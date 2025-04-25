@@ -1,0 +1,6 @@
+@L.Heritage.Articles_HostAddress = http://localhost:5205
+
+GET {{L.Heritage.Articles_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
