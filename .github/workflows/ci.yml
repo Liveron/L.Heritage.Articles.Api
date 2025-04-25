@@ -12,5 +12,10 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
+    - name: Where i am
+      run: |
+        ls
+        pwd
+        
     - name: Checkout code
       uses: actions/checkout@v4
