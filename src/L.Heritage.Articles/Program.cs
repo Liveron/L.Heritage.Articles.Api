@@ -8,13 +8,24 @@ builder.AddServiceDefaults();
 builder.AddApplicationServices();
 builder.Services.AddProblemDetails();
 
-builder.Services.AddApiVersioning();
+builder.Services.AddApiVersioning(options =>
+{
+    options.AssumeDefaultVersionWhenUnspecified = true;
+});
 
 builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen();
+
 
 var app = builder.Build();
 
-app.MapOpenApi();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.NewVersionedApi()
     .MapArticlesApiV1();

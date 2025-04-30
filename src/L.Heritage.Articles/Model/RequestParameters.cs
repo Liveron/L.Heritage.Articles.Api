@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace L.Heritage.Articles.Model;
+﻿namespace L.Heritage.Articles.Model;
 
 public class RequestParameters
 {

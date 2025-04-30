@@ -17,10 +17,9 @@ RUN dotnet nuget add source https://nuget.pkg.github.com/Liveron/index.json \
     --name github
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["src/L.Heritage.Articles/L.Heritage.Articles.csproj", "L.Heritage.Articles/"]
-RUN dotnet restore "./L.Heritage.Articles/L.Heritage.Articles.csproj"
+COPY ["L.Heritage.Articles.csproj", "."]
+RUN dotnet restore "L.Heritage.Articles.csproj"
 COPY . .
-WORKDIR "app/src/L.Heritage.Articles"
 RUN dotnet build "L.Heritage.Articles.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Этот этап используется для публикации проекта службы, который будет скопирован на последний этап
