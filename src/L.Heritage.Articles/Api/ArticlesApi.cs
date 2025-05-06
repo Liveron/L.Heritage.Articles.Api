@@ -1,4 +1,6 @@
 ﻿using L.Heritage.Articles.Model;
+using L.Heritage.Articles.Model.DTOs;
+using L.Heritage.Articles.Model.ViewModel;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +26,7 @@ public static class ArticlesApi
         return app;
     }
 
-    public static async Task<Results<Ok<PaginatedItems<Article>>, BadRequest<string>>> GetAllArticles(
+    public static async Task<Results<Ok<PaginatedItems<ArticleVM>>, BadRequest<string>>> GetAllArticles(
         [AsParameters] ArticlesServices services,
         [AsParameters] RequestParameters requestParameters)
     {
@@ -42,12 +44,14 @@ public static class ArticlesApi
             .Limit(pageSize)
             .ToListAsync();
 
-        return TypedResults.Ok(new PaginatedItems<Article>(
+        var articleVms = articles.ConvertAll(a => a.ToArticleVM());
+
+        return TypedResults.Ok(new PaginatedItems<ArticleVM>(
             pageNumber: pageNumber,
             totalCount: totalArticles,
             hasPrevious: pageNumber > 1,
             hasNext: pageNumber < totalPages,
-            data: articles));
+            data: articleVms));
     }
 
     //public static async Task<Results<Ok<Article>, NotFound, BadRequest<string>>> GetArticleById(
@@ -95,12 +99,14 @@ public static class ArticlesApi
     //}
 
     public static async Task<Created> CreateArticle(
-        IMongoDatabase database, Article article, [FromServices] ArticlesServices services)
+        IMongoDatabase database, CreateArticleDTO articleDto, [FromServices] ArticlesServices services)
     {
         services.Logger.LogInformation($"Method api/articles CreateArticle started. " +
-            $"Request: {JsonSerializer.Serialize(article)}");
+            $"Request: {JsonSerializer.Serialize(articleDto)}");
 
         var articlesCollection = GetArticlesCollection(database);
+
+        var article = new Article(articleDto.Title, articleDto.Content, articleDto.Preview);
 
         await articlesCollection.InsertOneAsync(article);
 
