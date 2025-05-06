@@ -6,21 +6,37 @@ on:
   pull_request:
     branches: [ "develop" ]
   workflow_dispatch:
-  
+
+env:
+  DOTNET_VERSION: '9.0'
+  SOLUTION_FILE: L.Heritage.Articles.sln
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    steps:
-    - name: Where i am
-      run: |
-        ls
-        pwd
-
+    steps:  
     - name: Checkout code
       uses: actions/checkout@v4
-    
-    - name: Where i am
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        source-url: https://nuget.pkg.github.com/Liveron/index.json
+      env: 
+        NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Restore dependencies
+      run: dotnet restore  ${{ env.SOLUTION_FILE }}
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore ${{ env.SOLUTION_FILE }}
+
+    - name: Run tests
       run: |
-        ls
-        pwd
+        dotnet test \
+          --no-build \
+          --configuration Release \
+          --logger "trx;LogFileName=test-results.trx" \
+          --results-directory ./TestResults \
+          ${{ env.SOLUTION_FILE }}

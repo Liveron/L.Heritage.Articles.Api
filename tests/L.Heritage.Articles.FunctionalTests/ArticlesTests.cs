@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Asp.Versioning.Http;
 using Asp.Versioning;
+using Microsoft.Extensions.Configuration;
 
 namespace L.Heritage.Articles.FunctionalTests;
 
@@ -18,32 +19,16 @@ public sealed class ArticlesTests :
         var handler = new ApiVersionHandler(new QueryStringApiVersionWriter(), new ApiVersion(1.0));
 
         _applicationFactory = applicationFactory;
+
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+        if (string.IsNullOrWhiteSpace(environment) || environment != "Testing")
+            DotNetEnv.Env.Load("../../.env");
+
         _httpClient = _applicationFactory.CreateDefaultClient(handler);
     }
 
     [Fact]
-    public async Task InsertPreviewWithSameId_ShouldThrowException()
-    {
-        // Arrange
-        using var scope = _applicationFactory.Services.CreateScope();
-        var articlesContext = scope.ServiceProvider.GetRequiredService<ArticlesContext>();
-
-        // Act
-        var article = new Article
-        {
-            Id = 1,
-            Tilte = string.Empty,
-            Preview = new ArticlePreview { Title = string.Empty }
-        };
-
-        var preview = new ArticlePreview { ArticleId = 1 };
-
-        // Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-        {
-            await articlesContext.AddAsync(article);
-            await articlesContext.AddAsync(preview);
-            await articlesContext.SaveChangesAsync();
-        });
-    }
+    public void Test()
+    { }
 }

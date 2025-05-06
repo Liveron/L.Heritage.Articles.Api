@@ -4,8 +4,6 @@ namespace L.Heritage.Articles.Model;
 
 public class ArticlePreview
 {
-    public int ArticleId { get; set; }
-
     [Required]
     public string Title { get; set; } = null!;
 

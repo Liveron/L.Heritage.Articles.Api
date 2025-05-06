@@ -1,8 +1,11 @@
-﻿using L.Heritage.Articles.Infrastructure;
+﻿using MongoDB.Driver;
 
 namespace L.Heritage.Articles.Model;
 
-public class ArticlesServices(ArticlesContext context)
+public class ArticlesServices(
+    ILogger<ArticlesServices> logger,
+    IMongoDatabase database)
 {
-    public ArticlesContext Context { get; init; } = context;
+    public IMongoDatabase Database { get; } = database;
+    public ILogger<ArticlesServices> Logger { get; } = logger;
 }

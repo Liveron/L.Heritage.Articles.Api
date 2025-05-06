@@ -1,13 +1,8 @@
 services:
-  postgres:
-    image: postgres
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    ports:
-      - "5432:5432"
-    environment: 
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  mongo:
+    image: mongo:8.0.8-noble
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+
   
