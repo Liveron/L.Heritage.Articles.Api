@@ -16,12 +16,12 @@ public static class ArticlesApi
         var api = app.MapGroup("api/articles").HasApiVersion(1.0);
 
         api.MapGet("/", GetAllArticles);
-        //api.MapGet("/{id:int}", GetArticleById);
-        //api.MapGet("/{articleId:int}/preview", GetArticlePreviewById);
+        api.MapGet("/{id}", GetArticleById);
+        api.MapGet("/previews", GetAllArticlePreviews);
 
         //api.MapPut("/", UpdateArticle);
         api.MapPost("/", CreateArticle);
-        //api.MapDelete("/{id:int}", DeleteArticleById);
+        api.MapDelete("/{id}", DeleteArticleById);
 
         return app;
     }
@@ -35,11 +35,13 @@ public static class ArticlesApi
 
         var articlesCollection = GetArticlesCollection(services.Database);
 
-        var totalArticles = await articlesCollection.CountDocumentsAsync("{}");
+        var emptyFilter = FilterDefinition<Article>.Empty;
+
+        var totalArticles = await articlesCollection.CountDocumentsAsync(emptyFilter);
 
         var totalPages = (int)Math.Ceiling(totalArticles / (double)pageSize);
 
-        var articles = await articlesCollection.Find("{}")
+        var articles = await articlesCollection.Find(emptyFilter)
             .Skip(pageSize * (pageNumber - 1))
             .Limit(pageSize)
             .ToListAsync();
@@ -54,20 +56,54 @@ public static class ArticlesApi
             data: articleVms));
     }
 
-    //public static async Task<Results<Ok<Article>, NotFound, BadRequest<string>>> GetArticleById(
-    //    [AsParameters] ArticlesServices services,
-    //    int id)
-    //{
-    //    if (id <= 0)
-    //        return TypedResults.BadRequest("Id is not valid.");
+    public static async Task<Results<Ok<ArticleVM>, NotFound, BadRequest<string>>> GetArticleById(
+        [AsParameters] ArticlesServices services,
+        string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            return TypedResults.BadRequest("Id is not valid.");
 
-    //    var item = await services.Context.Articles.SingleOrDefaultAsync(a => a.Id == id);
+        var articlesCollection = GetArticlesCollection(services.Database);
 
-    //    if (item == null)
-    //        return TypedResults.NotFound();
+        var filter = Builders<Article>.Filter.Eq(a => a.Id, id);
 
-    //    return TypedResults.Ok(item);
-    //}
+        var article = await articlesCollection.Find(filter).FirstOrDefaultAsync();
+
+        if (article is null)
+            return TypedResults.NotFound();
+
+        return TypedResults.Ok(article.ToArticleVM());
+    }
+
+    public static async Task<Ok<PaginatedItems<ArticlePreviewVM>>> GetAllArticlePreviews(
+        [AsParameters] ArticlesServices services,
+        [AsParameters] RequestParameters requestParameters)
+    {
+        var pageSize = requestParameters.PageSize;
+        var pageNumber = requestParameters.PageNumber;
+
+        var articlesCollection = GetArticlesCollection(services.Database);
+
+        var emptyFilter = FilterDefinition<Article>.Empty;
+
+        var totalArticles = await articlesCollection.CountDocumentsAsync(emptyFilter);
+
+        var totalPages = (int)Math.Ceiling(totalArticles / (double)pageSize);
+
+        var articles = await articlesCollection.Find(emptyFilter)
+            .Skip(pageSize * (pageNumber - 1))
+            .Limit(pageSize)
+            .ToListAsync();
+
+        var previewVMs = articles.ConvertAll(a => a.Preview.ToArticlePreviewVM(a.Id));
+
+        return TypedResults.Ok(new PaginatedItems<ArticlePreviewVM>(
+            pageNumber: pageNumber,
+            totalCount: totalArticles,
+            hasPrevious: pageNumber > 1,
+            hasNext: pageNumber < totalPages,
+            data: previewVMs));
+    }
 
     //public static async Task<Results<Ok<ArticlePreview>, NotFound>> GetArticlePreviewById(
     //    ArticlesContext context, int articleId)
@@ -99,12 +135,13 @@ public static class ArticlesApi
     //}
 
     public static async Task<Created> CreateArticle(
-        IMongoDatabase database, CreateArticleDTO articleDto, [FromServices] ArticlesServices services)
+        CreateArticleDTO articleDto, 
+        [FromServices] ArticlesServices services)
     {
         services.Logger.LogInformation($"Method api/articles CreateArticle started. " +
             $"Request: {JsonSerializer.Serialize(articleDto)}");
 
-        var articlesCollection = GetArticlesCollection(database);
+        var articlesCollection = GetArticlesCollection(services.Database);
 
         var article = new Article(articleDto.Title, articleDto.Content, articleDto.Preview);
 
@@ -113,20 +150,22 @@ public static class ArticlesApi
         return TypedResults.Created($"/api/articles/{article.Id}");
     }
 
-    //public static async Task<Results<NoContent, NotFound>> DeleteArticleById(
-    //    ArticlesContext context, int id)
-    //{
-    //    var article = context.Articles.SingleOrDefault(a => a.Id == id);
+    public static async Task<Results<NoContent, NotFound>> DeleteArticleById(
+        [FromServices] ArticlesServices services,
+        string id)
+    {
+        var articlesCollection = GetArticlesCollection(services.Database);
 
-    //    if (article is null ) 
-    //        return TypedResults.NotFound();
+        var filter = Builders<Article>.Filter.Eq(a => a.Id, id);
 
-    //    context.Articles.Remove(article);
-    //    await context.SaveChangesAsync();
-    //    return TypedResults.NoContent();
-    //}
+        var result = await articlesCollection.DeleteOneAsync(filter);
+
+        if (result.DeletedCount < 1)
+            return TypedResults.NotFound();
+
+        return TypedResults.NoContent();
+    }
 
     private static IMongoCollection<Article> GetArticlesCollection(IMongoDatabase database) =>
         database.GetCollection<Article>("articles");
-
 }

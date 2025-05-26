@@ -11,17 +11,24 @@ internal static class Extensions
     {
         builder
             .AddMongoDB()
-            .AddServices();
-        
+            .AddServices()
+            .AddEnvironment();
     }
+
+    private static IHostApplicationBuilder AddEnvironment(this IHostApplicationBuilder builder)
+    {
+        builder.Configuration.AddEnvironmentVariables(prefix: "ARTICLES_");
+        return builder;
+    }
+
     private static IHostApplicationBuilder AddMongoDB(this IHostApplicationBuilder builder)
     {
-        string? connectionString = Environment.GetEnvironmentVariable("HERITAGE_ARTICLES_DB");
+        var connectionString = builder.Configuration.GetValue<string>("ARTICLES_DB");
 
         if (string.IsNullOrWhiteSpace(connectionString))
-            throw new InvalidOperationException("Environment variable \"HERITAGE_ARTICLES_DB\" is not set");
+            throw new InvalidOperationException("Environment variable \"ARTICLES_DB\" is not set");
 
-        BsonSerializer.RegisterSerializer(new JsonElementToBsonSerializer());
+        BsonSerializer.TryRegisterSerializer(new JsonElementToBsonSerializer());
 
         builder.Services.AddSingleton(new MongoClient(connectionString).GetDatabase("articles"));
 

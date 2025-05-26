@@ -2,18 +2,20 @@
 using System.Text.Json;
 using L.Heritage.Articles.Model.ViewModel;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace L.Heritage.Articles.Model;
 
 public class Article(string title, JsonElement content, ArticlePreview preview)
 {
-    public ObjectId Id { get; init; }
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Id { get; init; } = null!;
 
     public string Title { get; init; } = title;
 
     public JsonElement Content { get; init; } = content;
 
-    [Required]
     public ArticlePreview Preview { get; init; } = preview;
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;
@@ -21,13 +23,12 @@ public class Article(string title, JsonElement content, ArticlePreview preview)
 
 internal static class ArticleExtensions
 {
-    public static ArticleVM ToArticleVM(this Article article)
+    public static ArticleVM ToArticleVM(this Article self)
     {
         return new ArticleVM(
-            article.Id.ToString(),
-            article.Title,
-            article.Content,
-            article.Preview,
-            article.CreatedAt);
+            self.Id.ToString(),
+            self.Title,
+            self.Content,
+            self.Preview);
     }
 }
